@@ -19,7 +19,7 @@ class Spaceship(pygame.sprite.Sprite):
         self.image = img
         self.rect = self.image.get_frect(center=(WINDOW_WIDTH/2, WINDOW_HEIGHT-50))
         self.direction = pygame.math.Vector2(1,1)
-        self.speed = 300
+        self.speed = 400
 
         #laser cooldown
         self.can_shoot = True
@@ -44,11 +44,12 @@ class Spaceship(pygame.sprite.Sprite):
         recent_keys = pygame.key.get_just_pressed()
         if recent_keys[pygame.K_SPACE] and self.can_shoot:
             laser_pos = self.rect.midtop
-            Laser(all_sprite, laser_img, laser_pos )
+            Laser((all_sprite,laser_sprites), laser_img, laser_pos )
             self.can_shoot = False
             self.shoot_time = pygame.time.get_ticks()
         self.laser_timer()
-
+        
+        
 
 class Star(pygame.sprite.Sprite):
     def __init__(self, groups, img):
@@ -88,15 +89,23 @@ laser_img = pygame.image.load('images/laser.png').convert_alpha()
 
 #for sprites
 all_sprite = pygame.sprite.Group()
+Meteor_sprites = pygame.sprite.Group()
+laser_sprites = pygame.sprite.Group()
 for i in range(20):
     Star(all_sprite, star_img)
 
 spaceship = Spaceship(all_sprite, spaceship_img)
- 
+
 #custom events
 meteor_event = pygame.event.custom_type()
-pygame.time.set_timer(meteor_event, 1000)
+pygame.time.set_timer(meteor_event, 500)
 
+#check for collision
+def collision():
+    for laser in laser_sprites:
+        collisions = pygame.sprite.spritecollide(laser, Meteor_sprites, True)
+        if collisions:
+            laser.kill()
 #Main loop
 while running:
     dt = clock.tick() / 1000
@@ -106,14 +115,12 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == meteor_event:
-            Meteor(all_sprite, metero_img)
+            Meteor((Meteor_sprites,all_sprite), metero_img)
+        
     all_sprite.update(dt)
-    
+    collision()
     #drawing the screen
     screen.fill("darkgray")
-
-    # if key[pygame.K_SPACE]:
-    #     print("laser")
     all_sprite.draw(screen)
     
     pygame.display.update()
