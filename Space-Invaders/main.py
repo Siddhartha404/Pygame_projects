@@ -10,6 +10,7 @@ screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Space Invaders")
 running = True
 clock = pygame.time.Clock()
+SCORE = 0
 
 
 #saceship
@@ -48,8 +49,6 @@ class Spaceship(pygame.sprite.Sprite):
             self.can_shoot = False
             self.shoot_time = pygame.time.get_ticks()
         self.laser_timer()
-        
-        
 
 class Star(pygame.sprite.Sprite):
     def __init__(self, groups, img):
@@ -81,11 +80,21 @@ class Laser(pygame.sprite.Sprite):
         self.rect.y -= self.speed * dt
         if self.rect.bottom < 0:
             self.kill()
+
+def game_score():
+    text = font.render(str(SCORE), True, 'white')
+    text_rect = text.get_frect(midbottom = (WINDOW_WIDTH /2, WINDOW_HEIGHT - 50))
+    screen.blit(text,text_rect)
+    pygame.draw.rect(screen, 'red', text_rect.inflate((10,15)), 5,5)
+
 #all imports
 spaceship_img = pygame.image.load('images/spaceship.png').convert_alpha()
 star_img = pygame.image.load('images/star.png').convert_alpha()
 metero_img = pygame.image.load('images/meteor.png').convert_alpha()
 laser_img = pygame.image.load('images/laser.png').convert_alpha()
+
+#importing fonts
+font = pygame.font.Font(None, 40)
 
 #for sprites
 all_sprite = pygame.sprite.Group()
@@ -102,10 +111,14 @@ pygame.time.set_timer(meteor_event, 500)
 
 #check for collision
 def collision():
+    global SCORE
     for laser in laser_sprites:
         collisions = pygame.sprite.spritecollide(laser, Meteor_sprites, True)
         if collisions:
+            SCORE += 10
             laser.kill()
+            
+
 #Main loop
 while running:
     dt = clock.tick() / 1000
@@ -120,9 +133,9 @@ while running:
     all_sprite.update(dt)
     collision()
     #drawing the screen
-    screen.fill("darkgray")
+    screen.fill("#3a2e3f")
     all_sprite.draw(screen)
-    
+    game_score()
     pygame.display.update()
 
 pygame.quit()
