@@ -12,7 +12,6 @@ running = True
 clock = pygame.time.Clock()
 SCORE = 0
 
-
 #saceship
 class Spaceship(pygame.sprite.Sprite):
     def __init__(self, groups, img):
@@ -26,6 +25,10 @@ class Spaceship(pygame.sprite.Sprite):
         self.can_shoot = True
         self.shoot_time = 0
         self.cooldown = 300
+
+        #mask
+        self.mask = pygame.mask.from_surface(self.image)
+
 
     def laser_timer(self):
         if not self.can_shoot:
@@ -49,13 +52,15 @@ class Spaceship(pygame.sprite.Sprite):
             self.can_shoot = False
             self.shoot_time = pygame.time.get_ticks()
         self.laser_timer()
-
+#star
 class Star(pygame.sprite.Sprite):
     def __init__(self, groups, img):
         super().__init__(groups)   
         self.image = img
         self.rect = self.image.get_frect(center=((randint(0,WINDOW_WIDTH),randint(0,WINDOW_HEIGHT))))
-    
+        #mask
+        self.mask = pygame.mask.from_surface(self.image)
+#meteor 
 class Meteor(pygame.sprite.Sprite):
     def __init__(self, groups, img):
         super().__init__(groups)   
@@ -64,28 +69,35 @@ class Meteor(pygame.sprite.Sprite):
         self.create_time = pygame.time.get_ticks()
         self.speed = randint(400,500)
         self.direction = pygame.Vector2(uniform(-0.5,0.5),1)
+
+        #mask
+        self.mask = pygame.mask.from_surface(self.image)
     def update(self, dt):
         current_time = pygame.time.get_ticks()
         self.rect.center += self.direction * self.speed * dt
         if current_time - self.create_time >= 3000:
             self.kill()
-
+#laser
 class Laser(pygame.sprite.Sprite):
     def __init__(self, groups, img, pos):
         super().__init__(groups)   
         self.image = img
         self.rect = self.image.get_frect(midbottom = pos)
         self.speed = 400
+
+        #mask
+        self.mask = pygame.mask.from_surface(self.image)
     def update(self,dt):
         self.rect.y -= self.speed * dt
         if self.rect.bottom < 0:
             self.kill()
 
+#scoring function
 def game_score():
     text = font.render(str(SCORE), True, 'white')
     text_rect = text.get_frect(midbottom = (WINDOW_WIDTH /2, WINDOW_HEIGHT - 50))
     screen.blit(text,text_rect)
-    pygame.draw.rect(screen, 'red', text_rect.inflate((10,15)), 5,5)
+    pygame.draw.rect(screen, 'white', text_rect.inflate(20,20).move(0,-4), 5,10)
 
 #all imports
 spaceship_img = pygame.image.load('images/spaceship.png').convert_alpha()
@@ -112,13 +124,17 @@ pygame.time.set_timer(meteor_event, 500)
 #check for collision
 def collision():
     global SCORE
+    global running
+    collision_sprites = pygame.sprite.spritecollide(spaceship, Meteor_sprites, True, pygame.sprite.collide_mask)
+    if collision_sprites:
+        running = False
+        
     for laser in laser_sprites:
         collisions = pygame.sprite.spritecollide(laser, Meteor_sprites, True)
         if collisions:
             SCORE += 10
             laser.kill()
             
-
 #Main loop
 while running:
     dt = clock.tick() / 1000
@@ -134,8 +150,8 @@ while running:
     collision()
     #drawing the screen
     screen.fill("#3a2e3f")
-    all_sprite.draw(screen)
     game_score()
+    all_sprite.draw(screen)
     pygame.display.update()
 
 pygame.quit()
