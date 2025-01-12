@@ -49,6 +49,7 @@ class Spaceship(pygame.sprite.Sprite):
         if recent_keys[pygame.K_SPACE] and self.can_shoot:
             laser_pos = self.rect.midtop
             Laser((all_sprite,laser_sprites), laser_img, laser_pos )
+            laser_sound.play()
             self.can_shoot = False
             self.shoot_time = pygame.time.get_ticks()
         self.laser_timer()
@@ -63,20 +64,28 @@ class Star(pygame.sprite.Sprite):
 #meteor 
 class Meteor(pygame.sprite.Sprite):
     def __init__(self, groups, img):
-        super().__init__(groups)   
-        self.image = img
+        super().__init__(groups)
+        self.original_image = img   
+        self.image = self.original_image
         self.rect = self.image.get_frect(center=((randint(0,WINDOW_WIDTH),randint(-200,-100))))
         self.create_time = pygame.time.get_ticks()
         self.speed = randint(400,500)
         self.direction = pygame.Vector2(uniform(-0.5,0.5),1)
+        self.rotation = 0
 
         #mask
         self.mask = pygame.mask.from_surface(self.image)
+
     def update(self, dt):
         current_time = pygame.time.get_ticks()
         self.rect.center += self.direction * self.speed * dt
         if current_time - self.create_time >= 3000:
             self.kill()
+
+        #rotation
+        self.rotation += randint(10,100)*dt
+        self.image = pygame.transform.rotozoom(self.original_image,self.rotation,1)
+        self.rect = self.image.get_frect(center = self.rect.center)
 #laser
 class Laser(pygame.sprite.Sprite):
     def __init__(self, groups, img, pos):
@@ -104,6 +113,14 @@ spaceship_img = pygame.image.load('images/spaceship.png').convert_alpha()
 star_img = pygame.image.load('images/star.png').convert_alpha()
 metero_img = pygame.image.load('images/meteor.png').convert_alpha()
 laser_img = pygame.image.load('images/laser.png').convert_alpha()
+#sounds
+laser_sound = pygame.mixer.Sound('music/laser.wav')
+laser_sound.set_volume(0.5)
+explosion_sound = pygame.mixer.Sound('music/explosion.wav')
+explosion_sound.set_volume(0.5)
+game_sound = pygame.mixer.Sound('music/game_music.wav')
+game_sound.set_volume(0.1)
+game_sound.play()
 
 #importing fonts
 font = pygame.font.Font(None, 40)
@@ -128,12 +145,13 @@ def collision():
     collision_sprites = pygame.sprite.spritecollide(spaceship, Meteor_sprites, True, pygame.sprite.collide_mask)
     if collision_sprites:
         running = False
-        
+
     for laser in laser_sprites:
         collisions = pygame.sprite.spritecollide(laser, Meteor_sprites, True)
         if collisions:
             SCORE += 10
             laser.kill()
+            explosion_sound.play()
             
 #Main loop
 while running:
@@ -145,7 +163,7 @@ while running:
             running = False
         if event.type == meteor_event:
             Meteor((Meteor_sprites,all_sprite), metero_img)
-        
+    
     all_sprite.update(dt)
     collision()
     #drawing the screen
